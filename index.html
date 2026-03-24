@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タケノコ買取受付アプリ</title>
+  <meta name="description" content="タケノコ買取の受付・集計・履歴管理Webアプリ">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-init.js"></script>
+  <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+  <div id="app">
+    <!-- ローディングオーバーレイ -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">データを読み込んでいます...</div>
+    </div>
+    <!-- ヘッダー -->
+    <header id="main-header">
+      <div class="header-inner">
+        <div class="header-logo">🎋 タケノコ買取受付</div>
+        <div class="header-date" id="header-date"></div>
+      </div>
+    </header>
+
+    <!-- タブナビゲーション -->
+    <nav id="tab-nav">
+      <button class="tab-btn active" data-tab="tab01" id="nav-tab01">⚙️ 設定</button>
+      <button class="tab-btn" data-tab="tab02" id="nav-tab02">📝 受付入力</button>
+      <button class="tab-btn" data-tab="tab03" id="nav-tab03">📋 受付一覧</button>
+      <button class="tab-btn" data-tab="tab04" id="nav-tab04">📊 集計</button>
+      <button class="tab-btn" data-tab="tab05" id="nav-tab05">📈 履歴・分析</button>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main id="main-content">
+
+      <!-- TAB-01: 設定 -->
+      <section id="tab01" class="tab-panel active">
+        <h2 class="section-title">設定</h2>
+
+        <!-- 基本設定 -->
+        <div class="card">
+          <h3 class="card-title">📅 基本設定</h3>
+          <div class="form-group">
+            <label for="cfg-date">受付日付</label>
+            <input type="date" id="cfg-date" class="form-input">
+          </div>
+          <div class="price-grid">
+            <div class="form-group">
+              <label for="price-1">規格1 単価 (円/kg)</label>
+              <input type="number" id="price-1" class="form-input" min="0" value="200">
+            </div>
+            <div class="form-group">
+              <label for="price-2">規格2 単価 (円/kg)</label>
+              <input type="number" id="price-2" class="form-input" min="0" value="200">
+            </div>
+            <div class="form-group">
+              <label for="price-3">規格3 単価 (円/kg)</label>
+              <input type="number" id="price-3" class="form-input" min="0" value="100">
+            </div>
+            <div class="form-group">
+              <label for="price-4">規格4 単価 (円/kg)</label>
+              <input type="number" id="price-4" class="form-input" min="0" value="80">
+            </div>
+            <div class="form-group">
+              <label for="price-5">規格5 単価 (円/kg)</label>
+              <input type="number" id="price-5" class="form-input" min="0" value="60">
+            </div>
+            <div class="form-group">
+              <label for="price-kizu">キズ 単価 (円/kg)</label>
+              <input type="number" id="price-kizu" class="form-input" min="0" value="50">
+            </div>
+          </div>
+          <button id="btn-save-cfg" class="btn btn-primary">💾 設定を保存</button>
+          <div id="cfg-save-msg" class="save-msg hidden"></div>
+        </div>
+
+        <!-- 前日残金 -->
+        <div class="card">
+          <h3 class="card-title">💰 前日残金</h3>
+          <div class="prevbal-row">
+            <div class="prevbal-value">
+              <span id="prevbal-display">¥0</span>
+              <span id="prevbal-badge" class="badge badge-auto hidden">自動設定済</span>
+            </div>
+            <div class="prevbal-edit">
+              <input type="number" id="prevbal-input" class="form-input" min="0" placeholder="金額を入力">
+              <button id="btn-prevbal-change" class="btn btn-secondary">変更</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 氏名マスタ -->
+        <div class="card">
+          <h3 class="card-title">👤 氏名マスタ</h3>
+          <div id="name-master-list" class="name-master-list">
+            <p class="empty-msg">まだ登録された氏名がありません</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB-02: 受付入力 -->
+      <section id="tab02" class="tab-panel">
+        <h2 class="section-title">受付入力</h2>
+        <div class="card">
+          <!-- 氏名入力 -->
+          <div class="form-group" style="position:relative;">
+            <label for="input-name">氏名 <span class="required">*</span></label>
+            <input type="text" id="input-name" class="form-input form-input-lg" placeholder="氏名を入力（候補が表示されます）" autocomplete="off">
+            <div id="suggest-dropdown" class="suggest-dropdown hidden"></div>
+          </div>
+
+          <!-- 重量入力 -->
+          <div class="form-group">
+            <label>重量入力 (kg)</label>
+            <div class="weight-grid">
+              <div class="weight-item">
+                <label for="w1" class="weight-label">規格1</label>
+                <input type="number" id="w1" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+              </div>
+              <div class="weight-item">
+                <label for="w2" class="weight-label">規格2</label>
+                <input type="number" id="w2" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+              </div>
+              <div class="weight-item">
+                <label for="w3" class="weight-label">規格3</label>
+                <input type="number" id="w3" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+              </div>
+              <div class="weight-item">
+                <label for="w4" class="weight-label">規格4</label>
+                <input type="number" id="w4" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+              </div>
+              <div class="weight-item">
+                <label for="w5" class="weight-label">規格5</label>
+                <input type="number" id="w5" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+              </div>
+              <div class="weight-item">
+                <label for="w-kizu" class="weight-label">キズ</label>
+                <input type="number" id="w-kizu" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+              </div>
+            </div>
+          </div>
+
+          <!-- 金額プレビュー -->
+          <div id="price-preview" class="price-preview">
+            <div class="preview-row">
+              <span>合計重量</span><span id="prev-total-weight">0.0 kg</span>
+            </div>
+            <div class="preview-row">
+              <span>端数前金額</span><span id="prev-raw">¥0</span>
+            </div>
+            <div class="preview-row preview-main">
+              <span>支払金額（10円切上）</span><span id="prev-rounded">¥0</span>
+            </div>
+            <div class="preview-row preview-adj" id="prev-adj-row">
+              <span>調整額</span><span id="prev-adj">¥0</span>
+            </div>
+          </div>
+
+          <button id="btn-register" class="btn btn-success btn-full" disabled>✅ 登録する</button>
+          <div id="register-msg" class="save-msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- TAB-03: 受付一覧 -->
+      <section id="tab03" class="tab-panel">
+        <h2 class="section-title">受付一覧</h2>
+
+        <!-- サマリーカード -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="summary-label">受付件数</div>
+            <div class="summary-value" id="sum-count">0 件</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">合計重量</div>
+            <div class="summary-value" id="sum-weight">0.0 kg</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">当日合計</div>
+            <div class="summary-value" id="sum-total">¥0</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">残金</div>
+            <div class="summary-value" id="sum-balance">¥0</div>
+          </div>
+        </div>
+
+        <!-- 一覧テーブル -->
+        <div class="card table-card">
+          <div class="table-wrapper">
+            <table id="records-table" class="data-table">
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>氏名</th>
+                  <th>規格1</th>
+                  <th>規格2</th>
+                  <th>規格3</th>
+                  <th>規格4</th>
+                  <th>規格5</th>
+                  <th>キズ</th>
+                  <th>合計kg</th>
+                  <th>支払額</th>
+                  <th>調整</th>
+                  <th>削除</th>
+                </tr>
+              </thead>
+              <tbody id="records-tbody">
+                <tr><td colspan="12" class="empty-row">受付データがありません</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB-04: 集計 -->
+      <section id="tab04" class="tab-panel">
+        <h2 class="section-title">集計</h2>
+
+        <!-- 納品書テーブル -->
+        <div class="card">
+          <h3 class="card-title">📄 納品書</h3>
+          <div class="table-wrapper">
+            <table class="data-table" id="delivery-table">
+              <thead>
+                <tr>
+                  <th>品名</th>
+                  <th>数量 (kg)</th>
+                  <th>単価 (円/kg)</th>
+                  <th>金額 (円)</th>
+                </tr>
+              </thead>
+              <tbody id="delivery-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 集計サマリー -->
+        <div class="card agg-summary-card">
+          <h3 class="card-title">💹 集計サマリー</h3>
+          <div class="agg-summary">
+            <div class="agg-row agg-main">
+              <span>当日合計</span><span id="agg-day-total">¥0</span>
+            </div>
+            <div class="agg-row">
+              <span>前日残金</span><span id="agg-prev-bal">¥0</span>
+            </div>
+            <div class="agg-row agg-balance">
+              <span>残　　金</span><span id="agg-balance">¥0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LINE報告テキスト -->
+        <div class="card">
+          <h3 class="card-title">📱 LINE報告テキスト</h3>
+          <div class="btn-row">
+            <button id="btn-gen-line" class="btn btn-secondary">📝 テキスト生成</button>
+            <button id="btn-copy-line" class="btn btn-outline">📋 コピー</button>
+          </div>
+          <textarea id="line-textarea" class="report-textarea" rows="12" placeholder="「テキスト生成」を押すと報告文が生成されます" readonly></textarea>
+        </div>
+
+        <!-- PDF出力 -->
+        <div class="card">
+          <h3 class="card-title">🖨️ PDF出力（当日納品書）</h3>
+          <button id="btn-pdf-day" class="btn btn-outline">📥 PDFダウンロード</button>
+        </div>
+
+        <!-- 確定・保存 -->
+        <div class="card card-confirm">
+          <h3 class="card-title">✅ 本日分を確定・保存</h3>
+          <p class="confirm-note">保存すると前日残金が自動更新され、受付データがリセットされます。</p>
+          <button id="btn-confirm-day" class="btn btn-danger btn-full">📌 本日分を確定・保存</button>
+          <div id="confirm-msg" class="save-msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- TAB-05: 履歴・分析 -->
+      <section id="tab05" class="tab-panel">
+        <h2 class="section-title">履歴・分析</h2>
+
+        <!-- 集計単位切り替え -->
+        <div class="card">
+          <div class="unit-switch">
+            <button class="unit-btn active" data-unit="daily" id="unit-daily">日別</button>
+            <button class="unit-btn" data-unit="weekly" id="unit-weekly">週別</button>
+            <button class="unit-btn" data-unit="monthly" id="unit-monthly">月別</button>
+            <button class="unit-btn" data-unit="yearly" id="unit-yearly">年別</button>
+          </div>
+        </div>
+
+        <!-- 集計テーブル -->
+        <div class="card table-card">
+          <div class="table-wrapper">
+            <table class="data-table" id="history-table">
+              <thead>
+                <tr>
+                  <th>期間</th>
+                  <th>件数</th>
+                  <th>規格1 (kg)</th>
+                  <th>規格2 (kg)</th>
+                  <th>規格3 (kg)</th>
+                  <th>規格4 (kg)</th>
+                  <th>規格5 (kg)</th>
+                  <th>キズ (kg)</th>
+                  <th>合計金額</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody">
+                <tr><td colspan="9" class="empty-row">確定済みデータがありません</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="card">
+          <div class="btn-row">
+            <button id="btn-csv" class="btn btn-secondary">📊 CSV出力</button>
+            <button id="btn-pdf-summary" class="btn btn-outline">🖨️ PDF出力</button>
+          </div>
+          <br>
+          <h4 class="card-subtitle">📱 LINE用集計テキスト</h4>
+          <div class="btn-row">
+            <button id="btn-gen-line-hist" class="btn btn-secondary">📝 テキスト生成</button>
+            <button id="btn-copy-line-hist" class="btn btn-outline">📋 コピー</button>
+          </div>
+          <textarea id="line-hist-textarea" class="report-textarea" rows="10" placeholder="「テキスト生成」を押すと集計テキストが生成されます" readonly></textarea>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js?v=4"></script>
+</body>
+</html>

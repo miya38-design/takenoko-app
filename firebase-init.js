@@ -99,3 +99,11 @@ async function fsLoadAll() {
 
   return { cfg, records, nameMaster, history };
 }
+
+async function fsDeleteHistory(date) {
+  await COL.history().doc(date).delete();
+}
+
+async function fsUpdateHistory(entry) {
+  await COL.history().doc(entry.date).set(entry);
+}

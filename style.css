@@ -556,6 +556,73 @@ input, button, textarea, select { font-family: inherit; }
 .empty-msg { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1.5rem 0; }
 .hidden { display: none !important; }
 
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: fadeIn 0.2s ease;
+}
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 1.25rem 1.25rem 0;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.85rem;
+}
+.modal-body { padding: 1rem 1.25rem; }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== 履歴操作ボタン ===== */
+.btn-hist-edit {
+  background: transparent;
+  border: 1px solid rgba(74,124,255,0.4);
+  color: var(--accent-blue);
+  border-radius: var(--radius-sm);
+  padding: 0.22rem 0.6rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-right: 0.3rem;
+}
+.btn-hist-edit:hover { background: rgba(74,124,255,0.12); }
+.btn-hist-del {
+  background: transparent;
+  border: 1px solid rgba(239,68,68,0.35);
+  color: var(--accent-red);
+  border-radius: var(--radius-sm);
+  padding: 0.22rem 0.6rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-hist-del:hover { background: rgba(239,68,68,0.12); }
+
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-page); }

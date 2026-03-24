@@ -450,6 +450,18 @@ function initTab05() {
     try { await navigator.clipboard.writeText(text); alert('コピーしました'); }
     catch(e) { alert('コピーに失敗しました'); }
   });
+
+  // 編集モーダルのボタン
+  document.getElementById('edit-hist-cancel').addEventListener('click', () => {
+    document.getElementById('history-edit-modal').classList.add('hidden');
+  });
+  document.getElementById('edit-hist-save').addEventListener('click', saveHistoryEdit);
+  // オーバーレイ外クリックで閉じる
+  document.getElementById('history-edit-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('history-edit-modal')) {
+      document.getElementById('history-edit-modal').classList.add('hidden');
+    }
+  });
 }
 
 function periodKey(date, unit) {
@@ -480,15 +492,85 @@ function aggregateHistory(unit) {
 
 function renderHistory() {
   const rows  = aggregateHistory(currentUnit);
+  const LABELS = ['規格1','規格2','規格3','規格4','規格5','キズ'];
   const tbody = document.getElementById('history-tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-row">確定済みデータがありません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-row">確定済みデータがありません</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => {
     const wCells = r.sumW.map(w => `<td>${w > 0 ? w.toFixed(1) : '-'}</td>`).join('');
-    return `<tr><td>${r.key}</td><td>${r.count}</td>${wCells}<td>${fmt(r.totA)}</td></tr>`;
+    const actionBtns = currentUnit === 'daily'
+      ? `<td><button class="btn-hist-edit" data-date="${r.key}">編集</button><button class="btn-hist-del" data-date="${r.key}">削除</button></td>`
+      : '<td>-</td>';
+    return `<tr><td>${r.key}</td><td>${r.count}</td>${wCells}<td>${fmt(r.totA)}</td>${actionBtns}</tr>`;
   }).join('');
+
+  // 削除ボタン
+  tbody.querySelectorAll('.btn-hist-del').forEach(btn => {
+    btn.addEventListener('click', () => deleteHistoryEntry(btn.dataset.date));
+  });
+  // 編集ボタン
+  tbody.querySelectorAll('.btn-hist-edit').forEach(btn => {
+    btn.addEventListener('click', () => openHistoryEditModal(btn.dataset.date));
+  });
+}
+
+// ===== 履歴: 編集モーダルを開く =====
+function openHistoryEditModal(date) {
+  const entry = history.find(h => h.date === date);
+  if (!entry) return;
+
+  document.getElementById('edit-hist-date').value    = entry.date;
+  document.getElementById('edit-hist-count').value   = entry.count || 0;
+  document.getElementById('edit-hist-total').value   = entry.totA || 0;
+  document.getElementById('edit-hist-prevbal').value = entry.prevBal || 0;
+  (entry.sumW || [0,0,0,0,0,0]).forEach((w, i) => {
+    const el = document.getElementById(`edit-w${i}`);
+    if (el) el.value = w || 0;
+  });
+
+  document.getElementById('history-edit-modal').classList.remove('hidden');
+}
+
+// ===== 履歴: 編集内容を保存 =====
+async function saveHistoryEdit() {
+  const date    = document.getElementById('edit-hist-date').value;
+  const idx     = history.findIndex(h => h.date === date);
+  if (idx < 0) return;
+
+  const sumW    = [0,1,2,3,4,5].map(i => parseFloat(document.getElementById(`edit-w${i}`).value) || 0);
+  const totA    = parseInt(document.getElementById('edit-hist-total').value)   || 0;
+  const prevBal = parseInt(document.getElementById('edit-hist-prevbal').value) || 0;
+  const count   = parseInt(document.getElementById('edit-hist-count').value)   || 0;
+
+  history[idx] = { ...history[idx], sumW, totA, prevBal, balance: prevBal - totA, count };
+
+  try {
+    showLoading(true);
+    await fsUpdateHistory(history[idx]);
+    showLoading(false);
+    document.getElementById('history-edit-modal').classList.add('hidden');
+    renderHistory();
+  } catch(e) {
+    showLoading(false);
+    alert('保存に失敗しました: ' + e.message);
+  }
+}
+
+// ===== 履歴: 削除 =====
+async function deleteHistoryEntry(date) {
+  if (!confirm(`${date} の確定データを削除しますか？\nこの操作は元に戻せません。`)) return;
+  try {
+    showLoading(true);
+    await fsDeleteHistory(date);
+    history = history.filter(h => h.date !== date);
+    showLoading(false);
+    renderHistory();
+  } catch(e) {
+    showLoading(false);
+    alert('削除に失敗しました: ' + e.message);
+  }
 }
 
 function genLineHistText() {

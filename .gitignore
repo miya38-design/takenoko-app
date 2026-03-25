@@ -8,3 +8,6 @@ Thumbs.db
 
 # Node (将来のPhase 2用)
 node_modules/
+
+# Firebase設定（APIキーを含むため非公開）
+firebase-init.js

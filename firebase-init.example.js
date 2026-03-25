@@ -1,14 +1,20 @@
 /**
  * Firebase 初期化 & Firestore ヘルパー
+ *
+ * ⚠️ このファイルは設定テンプレートです。
+ * 実際の値を入れたファイルは firebase-init.js として保存し、
+ * .gitignore で管理してください（GitHubには公開しないこと）。
+ *
+ * Firebase Console > プロジェクトの設定 > マイアプリ から値を確認できます。
  */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAMAjlJZH-oDxnI18NYu1raMY9vusszLQg",
-  authDomain: "takenoko-app.firebaseapp.com",
-  projectId: "takenoko-app",
-  storageBucket: "takenoko-app.firebasestorage.app",
-  messagingSenderId: "375474041899",
-  appId: "1:375474041899:web:17d2e8446bb8814989e66e"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 firebase.initializeApp(firebaseConfig);

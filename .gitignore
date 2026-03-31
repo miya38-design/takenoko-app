@@ -10,4 +10,3 @@ Thumbs.db
 node_modules/
 
 # Firebase設定（APIキーを含むため非公開）
-firebase-init.js

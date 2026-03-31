@@ -14,6 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Remove firebase-init.js from .gitignore
+        run: sed -i '/firebase-init\.js/d' .gitignore
+
       - name: Create firebase-init.js from secrets
         run: |
           cat > firebase-init.js << 'EOF_TEMPLATE'

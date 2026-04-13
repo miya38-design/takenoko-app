@@ -142,13 +142,17 @@ function renderNameMaster() {
 }
 
 // ===== TAB-02: 受付入力 =====
+const GRADE_LABELS = ['規格1','規格2','規格3','規格4','規格5','キズ'];
+const MAX_ROWS = 20;
+
+// 各規格の入力行数カウンター
+let gradeRowCount = [0, 0, 0, 0, 0, 0];
+
 let suggestIdx = -1;
-const W_IDS = ['w1','w2','w3','w4','w5','w-kizu'];
 
 function initTab02() {
   const nameInput = document.getElementById('input-name');
   const dropdown  = document.getElementById('suggest-dropdown');
-  const wInputs   = W_IDS.map(id => document.getElementById(id)).filter(Boolean);
 
   if (!nameInput) { console.error('input-name not found'); return; }
 
@@ -170,14 +174,128 @@ function initTab02() {
     if (!dropdown.contains(e.target) && e.target !== nameInput) closeSuggest();
   });
 
-  const onWeightChange = () => { updatePricePreview(); updateRegisterBtn(); };
-  wInputs.forEach(inp => {
-    inp.addEventListener('input',  onWeightChange);
-    inp.addEventListener('change', onWeightChange);
-    inp.addEventListener('keyup',  onWeightChange);
+  // 規格タブ切り替え
+  document.querySelectorAll('.mw-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const g = parseInt(tab.dataset.grade);
+      document.querySelectorAll('.mw-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.mw-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`mwpanel-${g}`).classList.add('active');
+    });
   });
 
+  // ＋追加ボタン
+  for (let g = 0; g < 6; g++) {
+    document.getElementById(`mwadd-${g}`).addEventListener('click', () => addWeightRow(g));
+  }
+
   document.getElementById('btn-register').addEventListener('click', registerRecord);
+}
+
+/** 指定規格に入力行を1行追加 */
+function addWeightRow(grade) {
+  const list = document.getElementById(`mwlist-${grade}`);
+  const addBtn = document.getElementById(`mwadd-${grade}`);
+  const count = gradeRowCount[grade];
+
+  if (count >= MAX_ROWS) {
+    addBtn.textContent = `✕ 最大${MAX_ROWS}回まで`;
+    addBtn.disabled = true;
+    return;
+  }
+
+  const rowNum = count + 1;
+  const inputId = `mw-g${grade}-r${rowNum}`;
+
+  const row = document.createElement('div');
+  row.className = 'mw-row';
+  row.id = `mwrow-g${grade}-r${rowNum}`;
+  row.innerHTML = `
+    <span class="mw-row-num">${rowNum}</span>
+    <input type="number" id="${inputId}" class="form-input mw-row-input" min="0" step="0.1" placeholder="0.0" autocomplete="off">
+    <span class="mw-row-unit">kg</span>
+    <button class="mw-row-del" type="button" title="削除">✕</button>
+  `;
+
+  // 入力値変化 → 小計更新
+  const inp = row.querySelector('input');
+  inp.addEventListener('input',  () => { updateGradeSubtotal(grade); updatePricePreview(); updateRegisterBtn(); });
+  inp.addEventListener('change', () => { updateGradeSubtotal(grade); updatePricePreview(); updateRegisterBtn(); });
+
+  // 削除ボタン
+  row.querySelector('.mw-row-del').addEventListener('click', () => {
+    row.remove();
+    gradeRowCount[grade]--;
+    // 行番号を振り直す
+    renumberRows(grade);
+    // 追加ボタンを復活
+    addBtn.textContent = '＋ 入力欄を追加';
+    addBtn.disabled = false;
+    updateGradeSubtotal(grade);
+    updatePricePreview();
+    updateRegisterBtn();
+  });
+
+  list.appendChild(row);
+  gradeRowCount[grade]++;
+
+  // MAX到達でボタン無効化
+  if (gradeRowCount[grade] >= MAX_ROWS) {
+    addBtn.textContent = `✕ 最大${MAX_ROWS}回まで`;
+    addBtn.disabled = true;
+  }
+
+  // 追加したフィールドにフォーカス
+  inp.focus();
+
+  updateGradeSubtotal(grade);
+  updatePricePreview();
+  updateRegisterBtn();
+}
+
+/** 行番号を振り直す */
+function renumberRows(grade) {
+  const list = document.getElementById(`mwlist-${grade}`);
+  list.querySelectorAll('.mw-row').forEach((row, idx) => {
+    row.querySelector('.mw-row-num').textContent = idx + 1;
+  });
+}
+
+/** 指定規格の合計を計算して表示 */
+function updateGradeSubtotal(grade) {
+  const list  = document.getElementById(`mwlist-${grade}`);
+  const sum   = [...list.querySelectorAll('.mw-row-input')].reduce((acc, el) => {
+    const v = parseFloat(el.value);
+    return acc + (isNaN(v) || v < 0 ? 0 : v);
+  }, 0);
+  document.getElementById(`mwsum-${grade}`).textContent = sum.toFixed(1) + ' kg';
+  return sum;
+}
+
+/** 全規格の重量を配列で返す（index 0〜5） */
+function getWeights() {
+  return Array.from({ length: 6 }, (_, g) => {
+    const list = document.getElementById(`mwlist-${g}`);
+    if (!list) return 0;
+    return [...list.querySelectorAll('.mw-row-input')].reduce((acc, el) => {
+      const v = parseFloat(el.value);
+      return acc + (isNaN(v) || v < 0 ? 0 : v);
+    }, 0);
+  });
+}
+
+/** 全入力欄をリセット */
+function resetAllWeightRows() {
+  for (let g = 0; g < 6; g++) {
+    const list = document.getElementById(`mwlist-${g}`);
+    if (list) list.innerHTML = '';
+    gradeRowCount[g] = 0;
+    const addBtn = document.getElementById(`mwadd-${g}`);
+    if (addBtn) { addBtn.textContent = '＋ 入力欄を追加'; addBtn.disabled = false; }
+    const sumEl = document.getElementById(`mwsum-${g}`);
+    if (sumEl) sumEl.textContent = '0.0 kg';
+  }
 }
 
 function showSuggest(q) {
@@ -213,13 +331,6 @@ function closeSuggest() {
   suggestIdx = -1;
 }
 
-function getWeights() {
-  return W_IDS.map(id => {
-    const el  = document.getElementById(id);
-    const val = el ? parseFloat(el.value) : NaN;
-    return isNaN(val) || val < 0 ? 0 : val;
-  });
-}
 
 function updatePricePreview() {
   const weights = getWeights();
@@ -260,7 +371,7 @@ async function registerRecord() {
   }
 
   document.getElementById('input-name').value = '';
-  W_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  resetAllWeightRows();
   closeSuggest();
   updatePricePreview();
   updateRegisterBtn();

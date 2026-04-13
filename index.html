@@ -119,33 +119,63 @@
             <div id="suggest-dropdown" class="suggest-dropdown hidden"></div>
           </div>
 
-          <!-- 重量入力 -->
+          <!-- 重量入力（規格ごとにボタンで追加・MAX20） -->
           <div class="form-group">
-            <label>重量入力 (kg)</label>
-            <div class="weight-grid">
-              <div class="weight-item">
-                <label for="w1" class="weight-label">規格1</label>
-                <input type="number" id="w1" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+            <label>重量入力 (kg) ─ 規格を選んで ＋ボタンで追加（最大20回）</label>
+            <div class="multi-weight-wrap" id="multi-weight-wrap">
+              <!-- 規格タブ -->
+              <div class="mw-tabs">
+                <button class="mw-tab active" data-grade="0" id="mwtab-0">規格1</button>
+                <button class="mw-tab" data-grade="1" id="mwtab-1">規格2</button>
+                <button class="mw-tab" data-grade="2" id="mwtab-2">規格3</button>
+                <button class="mw-tab" data-grade="3" id="mwtab-3">規格4</button>
+                <button class="mw-tab" data-grade="4" id="mwtab-4">規格5</button>
+                <button class="mw-tab" data-grade="5" id="mwtab-5">キズ</button>
               </div>
-              <div class="weight-item">
-                <label for="w2" class="weight-label">規格2</label>
-                <input type="number" id="w2" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
-              </div>
-              <div class="weight-item">
-                <label for="w3" class="weight-label">規格3</label>
-                <input type="number" id="w3" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
-              </div>
-              <div class="weight-item">
-                <label for="w4" class="weight-label">規格4</label>
-                <input type="number" id="w4" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
-              </div>
-              <div class="weight-item">
-                <label for="w5" class="weight-label">規格5</label>
-                <input type="number" id="w5" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
-              </div>
-              <div class="weight-item">
-                <label for="w-kizu" class="weight-label">キズ</label>
-                <input type="number" id="w-kizu" class="form-input weight-input" min="0" step="0.1" placeholder="0.0">
+              <!-- 各規格のパネル (JS で中身を管理) -->
+              <div class="mw-panels">
+                <div class="mw-panel active" id="mwpanel-0">
+                  <div class="mw-rows-list" id="mwlist-0"></div>
+                  <div class="mw-footer">
+                    <button class="mw-add-btn" id="mwadd-0" data-grade="0">＋ 入力欄を追加</button>
+                    <div class="mw-subtotal">合計: <span id="mwsum-0" class="mw-sum-val">0.0 kg</span></div>
+                  </div>
+                </div>
+                <div class="mw-panel" id="mwpanel-1">
+                  <div class="mw-rows-list" id="mwlist-1"></div>
+                  <div class="mw-footer">
+                    <button class="mw-add-btn" id="mwadd-1" data-grade="1">＋ 入力欄を追加</button>
+                    <div class="mw-subtotal">合計: <span id="mwsum-1" class="mw-sum-val">0.0 kg</span></div>
+                  </div>
+                </div>
+                <div class="mw-panel" id="mwpanel-2">
+                  <div class="mw-rows-list" id="mwlist-2"></div>
+                  <div class="mw-footer">
+                    <button class="mw-add-btn" id="mwadd-2" data-grade="2">＋ 入力欄を追加</button>
+                    <div class="mw-subtotal">合計: <span id="mwsum-2" class="mw-sum-val">0.0 kg</span></div>
+                  </div>
+                </div>
+                <div class="mw-panel" id="mwpanel-3">
+                  <div class="mw-rows-list" id="mwlist-3"></div>
+                  <div class="mw-footer">
+                    <button class="mw-add-btn" id="mwadd-3" data-grade="3">＋ 入力欄を追加</button>
+                    <div class="mw-subtotal">合計: <span id="mwsum-3" class="mw-sum-val">0.0 kg</span></div>
+                  </div>
+                </div>
+                <div class="mw-panel" id="mwpanel-4">
+                  <div class="mw-rows-list" id="mwlist-4"></div>
+                  <div class="mw-footer">
+                    <button class="mw-add-btn" id="mwadd-4" data-grade="4">＋ 入力欄を追加</button>
+                    <div class="mw-subtotal">合計: <span id="mwsum-4" class="mw-sum-val">0.0 kg</span></div>
+                  </div>
+                </div>
+                <div class="mw-panel" id="mwpanel-5">
+                  <div class="mw-rows-list" id="mwlist-5"></div>
+                  <div class="mw-footer">
+                    <button class="mw-add-btn" id="mwadd-5" data-grade="5">＋ 入力欄を追加</button>
+                    <div class="mw-subtotal">合計: <span id="mwsum-5" class="mw-sum-val">0.0 kg</span></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
